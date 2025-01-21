@@ -125,6 +125,19 @@ const Dashboard = () => {
                 </header>
 
                 <FileUpload handleFileUpload={handleFileUpload} error={error} />
+
+                {/* {!metrics && (
+                    <div className="text-center mt-10 text-gray-700">
+                        <p className="text-lg">
+                            Upload a financial Excel file to analyze income statements, view expense breakdowns, and get AI-powered insights.
+                        </p>
+                        <p className="text-sm mt-4 text-gray-500">
+                            Example: Use the provided dummy Excel file format to explore the features of this dashboard.
+                        </p>
+                    </div>
+                )} */}
+
+
                 {metrics && (
                     <>
                         <IncomeStatement financialData={financialData} />
