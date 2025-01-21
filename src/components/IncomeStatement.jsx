@@ -49,7 +49,7 @@ const IncomeStatement = ({ financialData }) => {
                     ))}
 
                     {/* Net Income */}
-                    <tr className="font-semibold border-b">
+                    {/* <tr className="font-semibold border-b">
                         <td className="py-2">Net Income</td>
                         <td
                             className={`py-2 text-right ${financialData.revenue[2024] - Object.values(financialData.expenses[2024]).reduce((a, b) => a + b, 0) >= 0
@@ -75,7 +75,7 @@ const IncomeStatement = ({ financialData }) => {
                                 Object.values(financialData.expenses[2023]).reduce((a, b) => a + b, 0)
                             ).toLocaleString()}
                         </td>
-                    </tr>
+                    </tr> */}
                 </tbody>
             </table>
         </div>
