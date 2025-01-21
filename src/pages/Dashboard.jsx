@@ -1,14 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FileUpload from "../components/FileUpload";
 import MetricsOverview from "../components/MetricsOverview";
 import ExpenseChart from "../components/ExpenseChart";
 import InsightsSection from "../components/InsightsSection";
 import IncomeStatement from "../components/IncomeStatement";
 import { parseExcel } from "../utils/parseExcel";
+import { fetchAIInsights } from "../utils/fetchAIInsights";
 
 const Dashboard = () => {
     const [financialData, setFinancialData] = useState(null);
     const [error, setError] = useState(null);
+    const [insights, setInsights] = useState([]);
+    const [metrics, setMetrics] = useState(null);
 
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
@@ -23,17 +26,17 @@ const Dashboard = () => {
         }
     };
 
-    const calculateMetrics = () => {
-        if (!financialData) return null;
+    const calculateMetrics = (data) => {
+        if (!data) return null;
 
-        const totalExpenses2024 = Object.values(financialData.expenses[2024]).reduce((a, b) => a + b, 0);
+        const totalExpenses2024 = Object.values(data.expenses[2024]).reduce((a, b) => a + b, 0);
 
         const operatingMargin = (
-            ((financialData.revenue[2024] - totalExpenses2024) / financialData.revenue[2024]) *
+            ((data.revenue[2024] - totalExpenses2024) / data.revenue[2024]) *
             100
         ).toFixed(2);
 
-        const expenseAnalysis = Object.entries(financialData.expenses[2024])
+        const expenseAnalysis = Object.entries(data.expenses[2024])
             .map(([category, amount]) => ({
                 category,
                 amount,
@@ -42,22 +45,18 @@ const Dashboard = () => {
             .sort((a, b) => b.amount - a.amount);
 
         return {
-            revenue: financialData.revenue[2024],
+            revenue: data.revenue[2024],
             totalExpenses: totalExpenses2024,
             operatingMargin,
             expenseAnalysis,
         };
     };
 
-    const metrics = calculateMetrics();
-
-    const generateInsights = (metrics) => {
-        if (!metrics) return [];
-
+    const generateInsights = async (metrics, data) => {
         const insights = [];
         const { expenseAnalysis, operatingMargin } = metrics;
 
-        // Major expense analysis
+        // Local insights
         const majorExpenses = expenseAnalysis.filter((exp) => parseFloat(exp.percentage) > 10);
         insights.push({
             type: "alert",
@@ -67,7 +66,6 @@ const Dashboard = () => {
                 .join(", ")}`,
         });
 
-        // Operating margin analysis
         insights.push({
             type: parseFloat(operatingMargin) > 15 ? "success" : "warning",
             title: "Profitability",
@@ -75,10 +73,45 @@ const Dashboard = () => {
                 }`,
         });
 
-        return insights;
+        // AI insights from Sambanova
+        try {
+            const aiResponse = await fetchAIInsights(data);
+            const aiMessage = aiResponse?.choices?.[0]?.message?.content || "No AI insights available.";
+
+            insights.push({
+                type: "info",
+                title: "AI Insights",
+                message: aiMessage,
+            });
+        } catch (error) {
+            console.error("Error fetching AI insights:", error);
+            insights.push({
+                type: "error",
+                title: "AI Insights Error",
+                message: "Failed to fetch AI insights.",
+            });
+        }
+
+        setInsights(insights); // Update the insights state
     };
 
-    const insights = metrics ? generateInsights(metrics) : [];
+
+    // Trigger calculations and insights generation when financialData changes
+    useEffect(() => {
+        if (financialData) {
+            const calculatedMetrics = calculateMetrics(financialData);
+            setMetrics(calculatedMetrics);
+
+            // Generate insights including AI insights
+            generateInsights(calculatedMetrics, financialData);
+        }
+    }, [financialData]);
+
+    console.log(financialData);
+    console.log("Data sent to AI:", JSON.stringify(financialData));
+
+
+
     return (
         <div className="min-h-screen bg-gray-100">
             <div className="p-6 max-w-4xl mx-auto">
@@ -103,7 +136,6 @@ const Dashboard = () => {
             </div>
         </div>
     );
-
 };
 
 export default Dashboard;
